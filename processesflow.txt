@@ -1,0 +1,44 @@
+## step---1  here we have data in in feature which is list in that list we have 4 nexted list so we have to access property ,geometry and id 
+
+ 
+ "features": [
+        {
+            "type": "Feature",
+            "properties": {
+                "mag": 4.9,
+                "place": "65 km SSW of Labuha, Indonesia",
+                "time": 1729498113226,
+                "updated": 1729499452040,
+                "tz": null,
+                "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000p00a",
+                "detail": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/detail/us6000p00a.geojson",
+                "felt": null,
+                "cdi": null,
+                "mmi": null,
+                "alert": null,
+                "status": "reviewed",
+                "tsunami": 0,
+                "sig": 369,
+                "net": "us",
+                "code": "6000p00a",
+                "ids": ",us6000p00a,",
+                "sources": ",us,",
+                "types": ",origin,phase-data,",
+                "nst": 43,
+                "dmin": 1.945,
+                "rms": 0.59,
+                "gap": 82,
+                "magType": "mb",
+                "type": "earthquake",
+                "title": "M 4.9 - 65 km SSW of Labuha, Indonesia"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    127.2924,
+                    -1.1854,
+                    10
+                ]
+            },
+            "id": "us6000p00a"
+        },
