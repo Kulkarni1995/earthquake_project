@@ -6,13 +6,14 @@ start_date - 2024-10-21
 
 """
 
-
 ### importing requried modules#
 from pyspark.sql import SparkSession
 import requests
 import os
 from google.cloud import storage
 from pyspark.sql.types import StructType, StructField, StringType, DoubleType, LongType, IntegerType, BooleanType
+from datetime import datetime
+import json
 
 ### Google cloud access key
 # Set the environment variable for Google Cloud credentials
@@ -33,16 +34,12 @@ class ReadDataFromApiJson:
         else:
             print(f"Failed to retrieve content. Status code: {response.status_code}")
 
+
 # url = r'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson'
 #
 # features = ReadDataFromApiJson.reading(url)
 
 # print(obj_json)
-
-
-
-
-
 
 
 ## class for creating GCS bucket with project name
@@ -62,14 +59,33 @@ class CreateCGSBucket:
         except Exception as e:
             print(f"Error creating bucket: {str(e)}")
 
+
 # project_name = 'all-purpuse'
 # bucket_name = 'earthquake-project-main-bucket'
 # location = 'us-central1'
 # obj = CreateCGSBucket(project_name,bucket_name).createbucket(location)
 
 
-
 ## upload json file to bucket
 
-# class UploadtoGCSJson():
-#     def
+
+class UploadtoGCSJson:
+    def uploadjson(bucket_name, data_object, destination_blob_prefix):
+        """Uploads a JSON object to a GCS bucket."""
+
+        # Initialize GCS client and bucket
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(bucket_name)
+
+        # Create a unique file name with the current date
+        date_str = datetime.now().strftime('%Y%m%d')
+        filename = f"{date_str}.json"
+
+        # Specify the blob (path) within the bucket where the file will be stored
+        destination_blob_name = f"{destination_blob_prefix}/{filename}"
+        blob = bucket.blob(destination_blob_name)
+
+        # Upload the JSON data directly from memory to GCS
+        blob.upload_from_string(data=json.dumps(data_object), content_type='application/json')
+
+        print(f"Upload of {filename} to {destination_blob_name} complete.")
