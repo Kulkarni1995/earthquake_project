@@ -42,3 +42,13 @@
             },
             "id": "us6000p00a"
         },
+{'type': 'Feature', 'properties': {'mag': 2.09, 'place': '17 km SSE of Naalehu, Hawaii', 'time': 1727250556020, 'updated': 1727392332140, 'tz': None, 'url': 'https://earthquake.usgs.gov/earthquakes/eventpage/hv74476767', 'detail': 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/detail/hv74476767.geojson', 'felt': None, 'cdi': None, 'mmi': None, 'alert': None, 'status': 'reviewed', 'tsunami': 0, 'sig': 67, 'net': 'hv', 'code': '74476767', 'ids': ',hv74476767,', 'sources': ',hv,', 'types': ',origin,phase-data,', 'nst': 43, 'dmin': 0.1421, 'rms': 0.12, 'gap': 252, 'magType': 'ml', 'type': 'earthquake', 'title': 'M 2.1 - 17 km SSE of Naalehu, Hawaii'}, 'geometry': {'type': 'Point', 'coordinates': [-155.5335, 18.9156666666667, 37.34]}, 'id': 'hv74476767'},
+
+
+### step--- 2 creatring bucket with python client lib
+
+--- done
+
+### step --- 3 upload json file with date format gs://bucketname/landing/20241019/.json
+
+-- done
