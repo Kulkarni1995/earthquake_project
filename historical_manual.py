@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
         bq  = ManualUploadtoBigQuery.load_json_from_gcs_to_bigquery(bucket_name,file_path,dataset_id,table_id,project_id)
 
-        print("Data ingestion and upload completed successfully.")
+        print("Data ingestion and upload completed successfully...")
 
     except Exception as e:
         print(f"An error occurred: {e}")

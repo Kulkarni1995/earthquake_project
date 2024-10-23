@@ -100,6 +100,29 @@ class UploadtoGCS:
             logging.error(f"Error uploading JSON to GCS: {e}")
             raise
 
+    def uploadjsondaily(bucket_name, data_object, destination_blob_prefix):
+        """Uploads a JSON object to a GCS bucket."""
+        try:
+            # Initialize GCS client and bucket
+            storage_client = storage.Client()
+            bucket = storage_client.bucket(bucket_name)
+
+            # Create a unique file name with the current date
+            date_str = datetime.now().strftime('%Y%m%d')
+            filename = f"daily{date_str}.json"
+
+            # Specify the blob (path) within the bucket where the file will be stored
+            destination_blob_name = f"{destination_blob_prefix}/{filename}"
+            blob = bucket.blob(destination_blob_name)
+
+            # Upload the JSON data directly from memory to GCS
+            blob.upload_from_string(data=json.dumps(data_object), content_type='application/json')
+
+            logging.info(f"Upload of {filename} to {destination_blob_name} complete.")
+        except Exception as e:
+            logging.error(f"Error uploading JSON to GCS: {e}")
+            raise
+
     @staticmethod
     def upload_parquet(bucket_name, dataframe, destination_blob_prefix):
         """Uploads a DataFrame as a Parquet file to a GCS bucket."""
@@ -141,6 +164,39 @@ class UploadtoGCS:
             # Create a unique file name with the current date
             date_str = datetime.now().strftime('%Y%m%d')
             filename = f"{date_str}.json"
+
+            # Convert DataFrame rows to JSON format
+            json_rdd = dataframe.toJSON()
+
+            # Collect the JSON data from the RDD to a list of strings
+            json_data_list = json_rdd.collect()
+
+            # Join the list of JSON strings into one large JSON string
+            json_data = "\n".join(json_data_list)
+
+            # Initialize GCS client
+            storage_client = storage.Client()
+            bucket = storage_client.bucket(bucket_name)
+
+            # Specify the destination blob name
+            destination_blob_name = f"{destination_blob_prefix}/{filename}"
+            blob = bucket.blob(destination_blob_name)
+
+            # Upload the JSON data from the string to GCS
+            blob.upload_from_string(json_data, content_type='application/json')
+
+            logging.info(f"Upload of {filename} to {destination_blob_name} complete.")
+        except Exception as e:
+            logging.error(f"Error uploading JSON DataFrame to GCS: {e}")
+            raise
+
+    @staticmethod
+    def upload_json_daily(bucket_name, dataframe, destination_blob_prefix):
+        """Uploads a PySpark DataFrame as a JSON file directly to a GCS bucket."""
+        try:
+            # Create a unique file name with the current date
+            date_str = datetime.now().strftime('%Y%m%d')
+            filename = f"daily{date_str}.json"
 
             # Convert DataFrame rows to JSON format
             json_rdd = dataframe.toJSON()
@@ -427,6 +483,101 @@ class ManualUploadtoBigQuery:
             print(f"An error occurred: {e}")
 
 
+
+class DailyUploadtoBigQuery:
+    def load_json_from_gcs_to_bigquery(bucket_name, file_path, dataset_id, table_id, project_id):
+        """
+        Loads a JSON file from GCS into an existing BigQuery table.
+
+        Parameters:
+        bucket_name (str): Name of the GCS bucket.
+        file_path (str): Path to the JSON file inside the GCS bucket.
+        dataset_id (str): BigQuery dataset ID.
+        table_id (str): BigQuery table ID.
+        project_id (str): GCP project ID.
+
+        Raises:
+        Exception: If the load job fails or dataset creation fails.
+        """
+
+        schema = [
+            {"name": "mag", "type": "FLOAT", "mode": "NULLABLE"},
+            {"name": "place", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "time", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "updated", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "tz", "type": "INTEGER", "mode": "NULLABLE"},
+            {"name": "url", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "detail", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "felt", "type": "INTEGER", "mode": "NULLABLE"},
+            {"name": "cdi", "type": "FLOAT", "mode": "NULLABLE"},
+            {"name": "mmi", "type": "FLOAT", "mode": "NULLABLE"},
+            {"name": "alert", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "status", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "tsunami", "type": "INTEGER", "mode": "NULLABLE"},
+            {"name": "sig", "type": "INTEGER", "mode": "NULLABLE"},
+            {"name": "net", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "code", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "ids", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "sources", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "types", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "nst", "type": "INTEGER", "mode": "NULLABLE"},
+            {"name": "dmin", "type": "FLOAT", "mode": "NULLABLE"},
+            {"name": "rms", "type": "FLOAT", "mode": "NULLABLE"},
+            {"name": "gap", "type": "FLOAT", "mode": "NULLABLE"},
+            {"name": "magType", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "type", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "title", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "longitude", "type": "FLOAT", "mode": "NULLABLE"},
+            {"name": "latitude", "type": "FLOAT", "mode": "NULLABLE"},
+            {"name": "depth", "type": "FLOAT", "mode": "NULLABLE"},
+            {"name": "area", "type": "STRING", "mode": "NULLABLE"},
+            {"name": "injection_date", "type": "STRING", "mode": "NULLABLE"}
+        ]
+
+        try:
+            # Initialize BigQuery client with the given project ID
+            client = bigquery.Client(project=project_id)
+
+            # Define the full table reference
+            table_ref = f"{project_id}.{dataset_id}.{table_id}"
+
+            # Check if the dataset exists
+            dataset_ref = client.dataset(dataset_id)
+            try:
+                client.get_dataset(dataset_ref)  # Make an API call to check if the dataset exists
+                print(f"Dataset '{dataset_id}' already exists.")
+            except Exception:
+                # Create the dataset if it does not exist
+                dataset = bigquery.Dataset(dataset_ref)
+                dataset.location = "US"  # You can set the location as needed
+                client.create_dataset(dataset)
+                print(f"Created dataset '{dataset_id}'.")
+
+            # Define the GCS URI to the JSON file
+            uri = f"gs://{bucket_name}/{file_path}"
+
+            # Configure the load job to append data to the existing table
+            job_config = bigquery.LoadJobConfig(
+                source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
+                schema=schema,
+                write_disposition=bigquery.WriteDisposition.WRITE_APPEND,  # Append data to the existing table
+            )
+
+            # Start the load job
+            print(f"Starting load job from {uri} to {table_ref}...")
+            load_job = client.load_table_from_uri(uri, table_ref, job_config=job_config)
+
+            # Wait for the load job to complete
+            load_job.result()  # Waits for the job to finish
+
+            print(f"Successfully loaded JSON data from {uri} into {table_ref}.")
+
+            # Get table details and print the number of rows loaded
+            table = client.get_table(table_ref)
+            print(f"Loaded {table.num_rows} rows into {table_ref}.")
+
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
 
 
